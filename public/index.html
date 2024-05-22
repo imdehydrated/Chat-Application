@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #messages { list-style: none; padding: 0; }
+        #messages li { padding: 8px; margin-bottom: 10px; background: #f4f4f4; }
+        #message-form { display: flex; margin-top: 20px; }
+        #message-form input, #message-form button { padding: 10px; }
+        #message-form input { flex: 1; margin-right: 10px; }
+        .container { margin-top: 50px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="text-center">Chat Application</h2>
+                <div id="auth-section">
+                    <form id="register-form" class="form-inline mb-2">
+                        <input id="register-username" class="form-control mr-2" placeholder="Username" required />
+                        <input id="register-password" type="password" class="form-control mr-2" placeholder="Password" required />
+                        <button class="btn btn-primary">Register</button>
+                    </form>
+                    <form id="login-form" class="form-inline">
+                        <input id="login-username" class="form-control mr-2" placeholder="Username" required />
+                        <input id="login-password" type="password" class="form-control mr-2" placeholder="Password" required />
+                        <button class="btn btn-success">Login</button>
+                    </form>
+                </div>
+                <div id="chat-section" class="d-none">
+                    <div class="form-inline mb-2">
+                        <input id="room-input" class="form-control mr-2" placeholder="Room" required />
+                        <button id="join-room" class="btn btn-info">Join Room</button>
+                    </div>
+                    <ul id="messages" class="list-group"></ul>
+                    <form id="message-form" class="form-inline">
+                        <input id="message-input" class="form-control" autocomplete="off" required />
+                        <button class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentRoom = '';
+        let username = '';
+        let token = '';
+
+        const authSection = document.getElementById('auth-section');
+        const chatSection = document.getElementById('chat-section');
+
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+        const joinRoomButton = document.getElementById('join-room');
+        const messageForm = document.getElementById('message-form');
+
+        const registerUsername = document.getElementById('register-username');
+        const registerPassword = document.getElementById('register-password');
+
+        const loginUsername = document.getElementById('login-username');
+        const loginPassword = document.getElementById('login-password');
+
+        const roomInput = document.getElementById('room-input');
+        const messageInput = document.getElementById('message-input');
+        const messages = document.getElementById('messages');
+
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const username = registerUsername.value;
+            const password = registerPassword.value;
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            username = loginUsername.value;
+            const password = loginPassword.value;
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            if (data.token) {
+                token = data.token;
+                authSection.classList.add('d-none');
+                chatSection.classList.remove('d-none');
+            } else {
+                alert(data.message);
+            }
+        });
+
+        joinRoomButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            currentRoom = roomInput.value;
+            socket.emit('joinRoom', currentRoom);
+            fetchMessages(currentRoom);
+        });
+
+        messageForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const message = messageInput.value;
+            socket.emit('chatMessage', { username, room: currentRoom, message });
+            messageInput.value = '';
+        });
+
+        socket.on('chatMessage', (msg) => {
+            const li = document.createElement('li');
+            li.textContent = `${msg.username}: ${msg.message}`;
+            messages.appendChild(li);
+        });
+
+        async function fetchMessages(room) {
+            const response = await fetch(`/chat/messages/${room}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            messages.innerHTML = '';
+            data.forEach((msg) => {
+                const li = document.createElement('li');
+                li.textContent = `${msg.username}: ${msg.message}`;
+                messages.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
