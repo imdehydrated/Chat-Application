@@ -13,13 +13,12 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const PORT = process.env.PORT || 3000;
+const db = process.env.MONGO_URI || 'mongodb+srv://jeddhui:1v1neKZLpdv7iPHx@projects.va0aimp.mongodb.net/?retryWrites=true&w=majority&appName=Projects';
 
-// Database configuration
-const db = require('./config/database').mongoURI;
-
-mongoose.connect(db)
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.log(err));
+mongoose.connect(db, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log('MongoDB connected')).catch(err => console.log(err));
 
 // Middleware
 app.use(express.json());
@@ -32,26 +31,26 @@ app.use('/chat', authenticate, chatRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
-  console.log('New user connected');
+    console.log('New user connected');
 
-  socket.on('joinRoom', (room) => {
-    socket.join(room);
-  });
-
-  socket.on('chatMessage', async (data) => {
-    const message = new Message({
-      username: data.username,
-      message: data.message,
-      room: data.room
+    socket.on('joinRoom', (room) => {
+        socket.join(room);
     });
 
-    await message.save();
-    io.to(data.room).emit('chatMessage', data);
-  });
+    socket.on('chatMessage', async (data) => {
+        const message = new Message({
+            username: data.username,
+            message: data.message,
+            room: data.room
+        });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
+        await message.save();
+        io.to(data.room).emit('chatMessage', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
 });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

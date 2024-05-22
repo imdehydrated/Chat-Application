@@ -76,31 +76,43 @@
             event.preventDefault();
             const username = registerUsername.value;
             const password = registerPassword.value;
-            const response = await fetch('/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await response.json();
-            alert(data.message);
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
         });
 
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             username = loginUsername.value;
             const password = loginPassword.value;
-            const response = await fetch('/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await response.json();
-            if (data.token) {
-                token = data.token;
-                authSection.classList.add('d-none');
-                chatSection.classList.remove('d-none');
-            } else {
-                alert(data.message);
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    token = data.token;
+                    authSection.classList.add('d-none');
+                    chatSection.classList.remove('d-none');
+                } else {
+                    alert(data.message || 'Login failed');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
         });
 
@@ -125,16 +137,20 @@
         });
 
         async function fetchMessages(room) {
-            const response = await fetch(`/chat/messages/${room}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            messages.innerHTML = '';
-            data.forEach((msg) => {
-                const li = document.createElement('li');
-                li.textContent = `${msg.username}: ${msg.message}`;
-                messages.appendChild(li);
-            });
+            try {
+                const response = await fetch(`/chat/messages/${room}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                messages.innerHTML = '';
+                data.forEach((msg) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${msg.username}: ${msg.message}`;
+                    messages.appendChild(li);
+                });
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
         }
     </script>
 </body>
