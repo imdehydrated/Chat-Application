@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const PORT = process.env.PORT || 3000;
-const db = process.env.MONGO_URI || 'mongodb+srv://jeddhui:1v1neKZLpdv7iPHx@projects.va0aimp.mongodb.net/?retryWrites=true&w=majority&appName=Projects';
+const db = process.env.MONGO_URI;
 
 mongoose.connect(db, {
     useNewUrlParser: true,
